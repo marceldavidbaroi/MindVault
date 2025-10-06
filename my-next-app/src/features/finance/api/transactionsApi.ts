@@ -5,6 +5,7 @@ import type {
   Transaction,
   TransactionSummary,
   BulkTransactionPayload,
+  FilterSummaryOptions,
 } from "../types/Transaction.type";
 
 const create = async (
@@ -24,6 +25,11 @@ const getAll = async (
 };
 const getOne = async (id: number): Promise<ApiResponse<Transaction>> => {
   return await api.get(`/transactions/${id}`);
+};
+const dailySummary = async (
+  query: FilterSummaryOptions
+): Promise<ApiResponse<any>> => {
+  return await api.get(`/summary`, { params: query });
 };
 const update = async (payload: {
   id: number;
@@ -48,6 +54,7 @@ const Api = {
   remove,
   overview,
   bulk,
+  dailySummary,
 };
 
 export default Api;

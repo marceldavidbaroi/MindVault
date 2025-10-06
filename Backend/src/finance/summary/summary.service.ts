@@ -10,6 +10,7 @@ import { Transactions } from 'src/finance/transactions/transactions.entity';
 import { MonthlyCategorySummary } from './category_monthly_summary.entity';
 import { DailySummary } from './daily_summary.entity';
 import { MonthlySummary } from './monthly_summary.entity';
+import { FilterSummaryDto } from './dto/filter-summary.dto';
 
 // ⚡ Renamed local interfaces to avoid conflict with the imported entity names
 interface IDailySummary {
@@ -274,5 +275,68 @@ export class SummaryService {
       "total_amount" = EXCLUDED."total_amount"`,
       )
       .execute();
+  }
+  async getSummaries(userId: number, options?: FilterSummaryDto) {
+    const now = new Date();
+    const year = options?.year ?? now.getFullYear();
+    const month = options?.month ?? now.getMonth() + 1;
+    const detail = options?.detailLevel ?? 'daily';
+    const specificDate = options?.date; // optional specific date
+
+    let dailySummaries: DailySummary[] = [];
+    let monthlySummaries: MonthlySummary[] = [];
+    let categoryMonthlySummaries: MonthlyCategorySummary[] = [];
+
+    // --- Daily summaries ---
+    if (detail === 'daily' || detail === 'detailed') {
+      const qb = this.dailySummaryRepository
+        .createQueryBuilder('d')
+        .where('d.user_id = :userId', { userId });
+
+      if (specificDate) {
+        qb.andWhere('d.date = :date', { date: specificDate });
+      } else {
+        qb.andWhere('EXTRACT(YEAR FROM d.date) = :year', { year }).andWhere(
+          'EXTRACT(MONTH FROM d.date) = :month',
+          { month },
+        );
+      }
+
+      dailySummaries = await qb.orderBy('d.date', 'ASC').getMany();
+    }
+
+    // --- Monthly summaries ---
+    if (detail === 'monthly' || detail === 'yearly' || detail === 'detailed') {
+      const qb = this.monthlySummaryRepository
+        .createQueryBuilder('m')
+        .where('m.user_id = :userId', { userId })
+        .andWhere('m.year = :year', { year });
+
+      if (month) {
+        qb.andWhere('m.month = :month', { month });
+      }
+
+      monthlySummaries = await qb.orderBy('m.month', 'ASC').getMany();
+    }
+
+    // --- Category monthly summaries ---
+    if (detail === 'monthly' || detail === 'detailed' || detail === 'daily') {
+      const qb = this.monthlyCategorySummaryRepository
+        .createQueryBuilder('c')
+        .where('c.user_id = :userId', { userId })
+        .andWhere('c.year = :year', { year });
+
+      if (month) {
+        qb.andWhere('c.month = :month', { month });
+      }
+
+      categoryMonthlySummaries = await qb.getMany();
+    }
+
+    return {
+      dailySummaries,
+      monthlySummaries,
+      categoryMonthlySummaries,
+    };
   }
 }

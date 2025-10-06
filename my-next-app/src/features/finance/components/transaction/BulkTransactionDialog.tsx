@@ -24,6 +24,7 @@ import {
   incomeCategoriesList,
   expenseCategoriesList,
 } from "@/features/finance/types/Transaction.type"; // adjust path
+import { useCategoryStore } from "../../store/categoryStore";
 
 type BulkTransactionDialogProps = {
   open: boolean;
@@ -36,17 +37,20 @@ const BulkTransactionDialog: React.FC<BulkTransactionDialogProps> = ({
   onClose,
   onSave,
 }) => {
+  const categoryStore = useCategoryStore();
   const [date, setDate] = useState<Dayjs | null>(dayjs()); // default current date
-  const [type, setType] = useState<TransactionType>("income");
+  const [type, setType] = useState<TransactionType>("expense");
   const [transactions, setTransactions] = useState<TransactionItem[]>([
-    { category: incomeCategoriesList[0], amount: 0 },
+    { categoryId: null, amount: null },
   ]);
 
   const categories =
-    type === "income" ? incomeCategoriesList : expenseCategoriesList;
+    type === "income"
+      ? categoryStore.incomeCategoryList
+      : categoryStore.expenseCategoryList;
 
   const handleAddTransaction = () => {
-    setTransactions([...transactions, { category: categories[0], amount: 0 }]);
+    setTransactions([...transactions, { categoryId: null, amount: null }]);
   };
 
   const handleRemoveTransaction = (index: number) => {
@@ -71,6 +75,10 @@ const BulkTransactionDialog: React.FC<BulkTransactionDialogProps> = ({
       type,
       transactions,
     });
+
+    setDate(dayjs()); // back to today
+    setType("expense"); // default type
+    setTransactions([{ categoryId: null, amount: null }]); // reset transactions
     onClose();
   };
 
@@ -87,7 +95,11 @@ const BulkTransactionDialog: React.FC<BulkTransactionDialogProps> = ({
               label="Date"
               value={date}
               onChange={(newValue) => setDate(newValue)}
-              slotProps={{ textField: { fullWidth: true } }}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                },
+              }}
             />
           </LocalizationProvider>
 
@@ -99,15 +111,6 @@ const BulkTransactionDialog: React.FC<BulkTransactionDialogProps> = ({
               const newType = e.target.value as TransactionType;
               setType(newType);
               // reset first transaction category when type changes
-              setTransactions([
-                {
-                  category:
-                    newType === "income"
-                      ? incomeCategoriesList[0]
-                      : expenseCategoriesList[0],
-                  amount: 0,
-                },
-              ]);
             }}
             fullWidth
           >
@@ -123,15 +126,15 @@ const BulkTransactionDialog: React.FC<BulkTransactionDialogProps> = ({
               <TextField
                 select
                 label="Category"
-                value={t.category}
+                value={t.categoryId}
                 onChange={(e) =>
-                  handleTransactionChange(index, "category", e.target.value)
+                  handleTransactionChange(index, "categoryId", e.target.value)
                 }
                 fullWidth
               >
                 {categories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
-                    {cat.replace(/_/g, " ")}
+                  <MenuItem key={cat.id} value={cat.id}>
+                    {cat?.displayName}
                   </MenuItem>
                 ))}
               </TextField>

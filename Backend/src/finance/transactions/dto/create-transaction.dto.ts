@@ -11,6 +11,7 @@ import {
   type RecurringInterval,
   type TransactionType,
 } from '../transactions.entity';
+import { Type } from 'class-transformer';
 
 export class CreateTransactionDto {
   @IsEnum(['income', 'expense'], {
@@ -20,6 +21,7 @@ export class CreateTransactionDto {
   type: TransactionType;
 
   @IsNumber({}, { message: 'Category must be a valid ID' })
+  @Type(() => Number) // <-- converts string to number automatically
   @IsNotEmpty({ message: 'Category ID is required' })
   categoryId: number;
 

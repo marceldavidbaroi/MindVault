@@ -14,13 +14,17 @@ import {
 } from "@mui/material";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import type { Transaction } from "@/features/finance/types/Transaction.type";
+import type {
+  Transaction,
+  TransactionForm,
+} from "@/features/finance/types/Transaction.type";
 import {
   expenseCategoriesList,
   incomeCategoriesList,
   recurringIntervals,
   transactionTypes,
 } from "@/features/finance/types/Transaction.type";
+import { useCategoryStore } from "../../store/categoryStore";
 
 interface TransactionFormDialogProps {
   open: boolean;
@@ -35,15 +39,17 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
   onSubmit,
   transaction,
 }) => {
-  const [form, setForm] = useState<Partial<Transaction>>({
+  const [form, setForm] = useState<Partial<TransactionForm>>({
     amount: null,
-    category: null,
+    categoryId: null,
     date: null,
     description: "",
     type: "income",
     recurring: false,
     recurringInterval: null,
   });
+
+  const categoryStore = useCategoryStore();
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof Partial<Transaction>, string>>
@@ -52,16 +58,9 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
   // Initialize form for edit or new
   useEffect(() => {
     if (transaction) {
-      const catList =
-        transaction.type === "income"
-          ? incomeCategoriesList
-          : expenseCategoriesList;
-
       setForm({
         amount: transaction.amount ?? null,
-        category: catList.includes(transaction.category ?? null)
-          ? transaction.category
-          : "",
+        categoryId: transaction.category?.id,
         date: transaction.date ? new Date(transaction.date) : null,
         description: transaction.description ?? "",
         type: transaction.type ?? "income",
@@ -71,7 +70,7 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
     } else {
       setForm({
         amount: null,
-        category: null,
+        categoryId: null,
         date: new Date(),
         description: "",
         type: "income",
@@ -93,7 +92,7 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
       setForm((prev) => ({
         ...prev,
         type: value as "income" | "expense",
-        category: null,
+        categoryId: null,
       }));
       return;
     }
@@ -114,7 +113,7 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
     const newErrors: typeof errors = {};
     if (!form.amount || Number(form.amount) <= 0)
       newErrors.amount = "Amount is required and must be greater than 0";
-    if (!form.category) newErrors.category = "Category is required";
+    if (!form.categoryId) newErrors.category = "Category is required";
     if (!form.date) newErrors.date = "Date is required";
     if (form.recurring && !form.recurringInterval)
       newErrors.recurringInterval =
@@ -128,16 +127,18 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
 
     const submitData = {
       ...form,
+      categoryId: form.categoryId,
+      date: form.date,
+      description: form.description,
+      type: form.type,
+      recurring: form.recurring,
+      recurringInterval: form.recurringInterval,
       amount: form.amount ? Number(form.amount) : 0, // convert to number
     };
 
     onSubmit(submitData);
     onClose();
   };
-
-  // Category options based on type
-  const categoryOptions =
-    form.type === "income" ? incomeCategoriesList : expenseCategoriesList;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -182,16 +183,28 @@ const TransactionFormDialog: React.FC<TransactionFormDialogProps> = ({
           select
           fullWidth
           label="Category"
-          name="category"
-          value={form.category ?? ""}
+          name="categoryId"
+          value={form.categoryId ?? ""}
           onChange={handleChange}
           error={!!errors.category}
         >
-          {categoryOptions.map((cat) => (
-            <MenuItem key={cat} value={cat}>
-              {cat.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-            </MenuItem>
-          ))}
+          {form.type === "income"
+            ? categoryStore.incomeCategoryList.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat?.displayName}
+                </MenuItem>
+              ))
+            : form.type === "expense"
+            ? categoryStore.expenseCategoryList.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat?.displayName}
+                </MenuItem>
+              ))
+            : categoryStore.allCategoryList.map((cat) => (
+                <MenuItem key={cat.id} value={cat.id}>
+                  {cat?.displayName}
+                </MenuItem>
+              ))}
         </TextField>
         {errors.category && (
           <FormHelperText error>{errors.category}</FormHelperText>

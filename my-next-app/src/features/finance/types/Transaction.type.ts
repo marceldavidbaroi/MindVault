@@ -1,7 +1,8 @@
+import { Category } from "@/features/finance/types/category.type";
 export interface Transaction {
   id: number;
   type: TransactionType;
-  category: IncomeCategory | ExpenseCategory | null;
+  category: Category;
   amount: number | null;
   date: string | null;
   description?: string;
@@ -9,6 +10,16 @@ export interface Transaction {
   recurringInterval?: RecurringInterval | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TransactionForm {
+  amount: number | null;
+  categoryId: number | null;
+  date: null;
+  description: string;
+  type: TransactionType;
+  recurring: Boolean;
+  recurringInterval: RecurringInterval | null;
 }
 
 export type TransactionType = "income" | "expense";
@@ -83,9 +94,25 @@ export const recurringIntervals: RecurringInterval[] = [
   "yearly",
 ];
 
+export const DETAIL_LEVELS = [
+  "daily",
+  "monthly",
+  "yearly",
+  "detailed",
+] as const;
+
+export type DetailLevel = (typeof DETAIL_LEVELS)[number]; // "daily" | "monthly" | "yearly" | "detailed"
+
+export interface FilterSummaryOptions {
+  year?: number;
+  month?: number;
+  date?: string; // ISO date string (YYYY-MM-DD)
+  detailLevel?: DetailLevel;
+}
+
 export type TransactionItem = {
-  category: IncomeCategory | ExpenseCategory;
-  amount: number;
+  categoryId: number | null;
+  amount: number | null;
 };
 
 export type BulkTransactionPayload = {
@@ -96,7 +123,7 @@ export type BulkTransactionPayload = {
 
 export interface FindTransactionsParams {
   type?: TransactionType;
-  category?: IncomeCategory | ExpenseCategory;
+  categoryId?: Category;
   startDate?: string; // ISO 8601 format
   endDate?: string; // ISO 8601 format
   page?: number;

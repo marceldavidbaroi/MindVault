@@ -75,7 +75,7 @@ export class TransactionsService {
     }
 
     if (filters?.categoryId) {
-      query.andWhere('transaction.categoryId = :categoryId', {
+      query.andWhere('category.id = :categoryId', {
         categoryId: filters.categoryId,
       });
     }

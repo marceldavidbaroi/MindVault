@@ -18,6 +18,7 @@ export class FindTransactionsDto {
   type?: TransactionType;
 
   @IsOptional()
+  @Type(() => Number) // <-- converts string to number automatically
   @IsNumber({}, { message: 'CategoryId must be a valid ID' })
   categoryId?: number;
 

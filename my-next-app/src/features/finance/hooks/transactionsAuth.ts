@@ -3,6 +3,7 @@ import Api from "../api/transactionsApi";
 import { useTransactionsStore } from "../store/transactionsStore";
 import type {
   BulkTransactionPayload,
+  FilterSummaryOptions,
   Transaction,
 } from "../types/Transaction.type";
 
@@ -112,6 +113,19 @@ export const useTransactions = () => {
     }
   };
 
+  const dailySummary = async (query: FilterSummaryOptions = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await Api.dailySummary(query);
+      return data;
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     create,
     getAll,
@@ -119,5 +133,6 @@ export const useTransactions = () => {
     update,
     remove,
     bulk,
+    dailySummary,
   };
 };

@@ -43,11 +43,16 @@ import {
   expenseCategoriesList,
   type FindTransactionsParams,
   type BulkTransactionPayload,
+  TransactionForm,
 } from "@/features/finance/types/Transaction.type";
+import { useCategory } from "../../hooks/categoryAuth";
+import { useCategoryStore } from "../../store/categoryStore";
 
 export default function TransactionTable() {
   const transactionStore = useTransactionsStore();
+  const categoryStore = useCategoryStore();
   const { getAll, getById, create, update, remove, bulk } = useTransactions();
+  const category = useCategory();
 
   const [pagination, setPagination] = useState({ page: 0, pageSize: 25 });
   const [totalRows, setTotalRows] = useState(0);
@@ -68,7 +73,7 @@ export default function TransactionTable() {
       page: pagination.page + 1,
       limit: pagination.pageSize,
       ...(filters.type ? { type: filters.type } : {}),
-      ...(filters.category ? { category: filters.category } : {}),
+      ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters.startDate ? { startDate: filters.startDate } : {}),
       ...(filters.endDate ? { endDate: filters.endDate } : {}),
     };
@@ -80,6 +85,13 @@ export default function TransactionTable() {
   useEffect(() => {
     fetchTransactions();
   }, [filters, pagination.page, pagination.pageSize]);
+
+  useEffect(() => {
+    const getAllCategory = async () => {
+      await category.getAll();
+    };
+    getAllCategory();
+  }, []);
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -93,7 +105,8 @@ export default function TransactionTable() {
     setDialogFormOpen(true);
   };
 
-  const handleFormSubmit = async (data: Partial<Transaction>) => {
+  const handleFormSubmit = async (data: Partial<TransactionForm>) => {
+    console.log(data);
     if (editingTransaction) {
       await update(editingTransaction.id, data);
     } else {
@@ -135,13 +148,13 @@ export default function TransactionTable() {
     setFilters({
       ...filters,
       type: e.target.value as TransactionType,
-      category: undefined,
+      categoryId: undefined,
     });
     setPagination({ ...pagination, page: 0 });
   };
 
   const handleCategoryChange = (e: any) => {
-    setFilters({ ...filters, category: e.target.value });
+    setFilters({ ...filters, categoryId: e.target.value });
     setPagination({ ...pagination, page: 0 });
   };
 
@@ -179,7 +192,6 @@ export default function TransactionTable() {
         flexWrap="wrap"
         gap={1}
       >
-        {JSON.stringify(transactionStore.transactionList)}
         <Button
           variant="contained"
           color="primary"
@@ -211,30 +223,28 @@ export default function TransactionTable() {
           <FormControl sx={{ minWidth: 180 }} size="small">
             <InputLabel>Category</InputLabel>
             <Select
-              value={filters.category || ""}
+              value={filters.categoryId || ""}
               label="Category"
               onChange={handleCategoryChange}
             >
               <MenuItem value="">All</MenuItem>
               {filters.type === "income"
-                ? incomeCategoriesList.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
+                ? category.incomeCategoryList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat?.displayName}
                     </MenuItem>
                   ))
                 : filters.type === "expense"
-                ? expenseCategoriesList.map((cat) => (
-                    <MenuItem key={cat} value={cat}>
-                      {cat}
+                ? category.expenseCategoryList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat?.displayName}
                     </MenuItem>
                   ))
-                : [...incomeCategoriesList, ...expenseCategoriesList].map(
-                    (cat) => (
-                      <MenuItem key={cat} value={cat}>
-                        {cat}
-                      </MenuItem>
-                    )
-                  )}
+                : category.allCategoryList.map((cat) => (
+                    <MenuItem key={cat.id} value={cat.id}>
+                      {cat?.displayName}
+                    </MenuItem>
+                  ))}
             </Select>
           </FormControl>
 
@@ -312,7 +322,7 @@ export default function TransactionTable() {
                   >
                     <TableCell>{formatDate(row.date)}</TableCell>
                     <TableCell>{row.type}</TableCell>
-                    <TableCell>{row.category.displayName}</TableCell>
+                    <TableCell>{row?.category?.displayName}</TableCell>
                     <TableCell>{row.description}</TableCell>
                     <TableCell>{row.recurring ? "Yes" : "No"}</TableCell>
                     <TableCell>{row.recurringInterval}</TableCell>

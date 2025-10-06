@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import TransactionTable from "@/features/finance/components/transaction/TransactionTable";
+import DailySummary from "@/features/finance/components/transaction/TransactionDailySummary";
 import ScrollContainer from "@/components/ScrollContainer";
 
 const TransactionIndex = () => {
@@ -26,7 +27,9 @@ const TransactionIndex = () => {
           boxSizing: "border-box",
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.12)", // subtle shadow
         }}
-      />
+      >
+        <DailySummary />
+      </Box>
 
       {/* Right big column */}
       <Box

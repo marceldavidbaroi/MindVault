@@ -84,7 +84,7 @@ export class AuthService {
     const payload: JwtPayload = { sub: user.id, username };
 
     // Sign tokens without generic
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
     // Hash and save refresh token in DB
