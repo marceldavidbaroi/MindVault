@@ -93,22 +93,11 @@ export const recurringIntervals: RecurringInterval[] = [
   "monthly",
   "yearly",
 ];
-
-export const DETAIL_LEVELS = [
-  "daily",
-  "monthly",
-  "yearly",
-  "detailed",
-] as const;
-
-export type DetailLevel = (typeof DETAIL_LEVELS)[number]; // "daily" | "monthly" | "yearly" | "detailed"
-
-export interface FilterSummaryOptions {
-  year?: number;
-  month?: number;
-  date?: string; // ISO date string (YYYY-MM-DD)
-  detailLevel?: DetailLevel;
-}
+export type GenerateReportType = {
+  startDate: string; // ISO date string, e.g., '2025-10-07'
+  endDate?: string; // optional ISO date string
+  detailLevel: "daily" | "monthly" | "yearly" | "detailed";
+};
 
 export type TransactionItem = {
   categoryId: number | null;

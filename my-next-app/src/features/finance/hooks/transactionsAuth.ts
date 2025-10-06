@@ -3,7 +3,7 @@ import Api from "../api/transactionsApi";
 import { useTransactionsStore } from "../store/transactionsStore";
 import type {
   BulkTransactionPayload,
-  FilterSummaryOptions,
+  GenerateReportType,
   Transaction,
 } from "../types/Transaction.type";
 
@@ -113,7 +113,12 @@ export const useTransactions = () => {
     }
   };
 
-  const dailySummary = async (query: FilterSummaryOptions = {}) => {
+  const dailySummary = async (
+    query: GenerateReportType = {
+      startDate: "",
+      detailLevel: "daily",
+    }
+  ) => {
     setLoading(true);
     setError(null);
     try {

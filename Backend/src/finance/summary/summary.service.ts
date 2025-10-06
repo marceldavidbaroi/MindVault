@@ -10,7 +10,7 @@ import { Transactions } from 'src/finance/transactions/transactions.entity';
 import { MonthlyCategorySummary } from './category_monthly_summary.entity';
 import { DailySummary } from './daily_summary.entity';
 import { MonthlySummary } from './monthly_summary.entity';
-import { FilterSummaryDto } from './dto/filter-summary.dto';
+import { GenerateReportDto } from './dto/filter-summary.dto';
 
 // ⚡ Renamed local interfaces to avoid conflict with the imported entity names
 interface IDailySummary {
@@ -276,67 +276,96 @@ export class SummaryService {
       )
       .execute();
   }
-  async getSummaries(userId: number, options?: FilterSummaryDto) {
-    const now = new Date();
-    const year = options?.year ?? now.getFullYear();
-    const month = options?.month ?? now.getMonth() + 1;
-    const detail = options?.detailLevel ?? 'daily';
-    const specificDate = options?.date; // optional specific date
+  async generateReport(userId: number, dto: GenerateReportDto) {
+    const { detailLevel, startDate, endDate } = dto;
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : start;
 
-    let dailySummaries: DailySummary[] = [];
-    let monthlySummaries: MonthlySummary[] = [];
-    let categoryMonthlySummaries: MonthlyCategorySummary[] = [];
-
-    // --- Daily summaries ---
-    if (detail === 'daily' || detail === 'detailed') {
-      const qb = this.dailySummaryRepository
-        .createQueryBuilder('d')
-        .where('d.user_id = :userId', { userId });
-
-      if (specificDate) {
-        qb.andWhere('d.date = :date', { date: specificDate });
-      } else {
-        qb.andWhere('EXTRACT(YEAR FROM d.date) = :year', { year }).andWhere(
-          'EXTRACT(MONTH FROM d.date) = :month',
-          { month },
-        );
-      }
-
-      dailySummaries = await qb.orderBy('d.date', 'ASC').getMany();
-    }
-
-    // --- Monthly summaries ---
-    if (detail === 'monthly' || detail === 'yearly' || detail === 'detailed') {
-      const qb = this.monthlySummaryRepository
-        .createQueryBuilder('m')
-        .where('m.user_id = :userId', { userId })
-        .andWhere('m.year = :year', { year });
-
-      if (month) {
-        qb.andWhere('m.month = :month', { month });
-      }
-
-      monthlySummaries = await qb.orderBy('m.month', 'ASC').getMany();
-    }
-
-    // --- Category monthly summaries ---
-    if (detail === 'monthly' || detail === 'detailed' || detail === 'daily') {
-      const qb = this.monthlyCategorySummaryRepository
-        .createQueryBuilder('c')
-        .where('c.user_id = :userId', { userId })
-        .andWhere('c.year = :year', { year });
-
-      if (month) {
-        qb.andWhere('c.month = :month', { month });
-      }
-
-      categoryMonthlySummaries = await qb.getMany();
-    }
-
-    return {
-      dailySummaries,
-      monthlySummaries,
-      categoryMonthlySummaries,
+    const report: any = {
+      dailySummaries: [],
+      monthlySummaries: [],
+      categoryMonthlySummaries: [],
+      yearlySummary: null,
     };
+
+    // Helper functions
+    const getYearMonthDays = (date: Date) => ({
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+    });
+
+    const addDailySummary = async (date: Date) => {
+      const dateStr = date.toISOString().split('T')[0];
+      const daily = await this.dailySummaryRepository.findOne({
+        where: { user: { id: userId }, date: dateStr },
+      });
+      if (daily) report.dailySummaries.push(daily);
+    };
+
+    const addMonthlySummary = async (year: number, month: number) => {
+      const monthly = await this.monthlySummaryRepository.findOne({
+        where: { user: { id: userId }, year, month },
+      });
+      if (monthly) report.monthlySummaries.push(monthly);
+
+      const categories = await this.monthlyCategorySummaryRepository.find({
+        where: { user: { id: userId }, year, month },
+      });
+      report.categoryMonthlySummaries.push(...categories);
+    };
+
+    const addYearlySummary = async (year: number) => {
+      const months = await this.monthlySummaryRepository.find({
+        where: { user: { id: userId }, year },
+      });
+      const totalIncome = months.reduce(
+        (sum, m) => sum + parseFloat(m.totalIncome),
+        0,
+      );
+      const totalExpense = months.reduce(
+        (sum, m) => sum + parseFloat(m.totalExpense),
+        0,
+      );
+      report.yearlySummary = { year, totalIncome, totalExpense };
+    };
+
+    // Main logic
+    if (detailLevel === 'daily' || detailLevel === 'detailed') {
+      let current = new Date(start);
+      while (current <= end) {
+        await addDailySummary(current);
+        const { year, month } = getYearMonthDays(current);
+        await addMonthlySummary(year, month);
+        current.setDate(current.getDate() + 1);
+      }
+      const years = Array.from(
+        new Set([start.getFullYear(), end.getFullYear()]),
+      );
+      for (const y of years) await addYearlySummary(y);
+    } else if (detailLevel === 'monthly') {
+      let current = new Date(start);
+      while (current <= end) {
+        const { year, month } = getYearMonthDays(current);
+        await addMonthlySummary(year, month);
+        current.setMonth(current.getMonth() + 1);
+      }
+      const years = Array.from(
+        new Set([start.getFullYear(), end.getFullYear()]),
+      );
+      for (const y of years) await addYearlySummary(y);
+    } else if (detailLevel === 'yearly') {
+      let currentYear = start.getFullYear();
+      const endYear = end.getFullYear();
+      while (currentYear <= endYear) {
+        for (let month = 1; month <= 12; month++) {
+          await addMonthlySummary(currentYear, month);
+        }
+        await addYearlySummary(currentYear);
+        currentYear++;
+      }
+    }
+
+    return report;
   }
 }

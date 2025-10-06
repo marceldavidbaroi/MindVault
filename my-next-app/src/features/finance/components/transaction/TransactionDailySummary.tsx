@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect } from "react";
 import { useTransactions } from "../../hooks/transactionsAuth";
-import { DetailLevel } from "../../types/Transaction.type";
 
 const DailySummary = () => {
   const { dailySummary } = useTransactions();
@@ -9,10 +8,8 @@ const DailySummary = () => {
   useEffect(() => {
     const getSummary = async () => {
       const query = {
-        date: new Date(),
-        month: new Date().getMonth() + 1,
-        year: new Date().getFullYear(),
-        detailLevel: "daily" as DetailLevel,
+        startDate: new Date().toISOString().split("T")[0], // 'YYYY-MM-DD'
+        detailLevel: "daily",
       };
       const response = await dailySummary(query);
       console.log(response);
