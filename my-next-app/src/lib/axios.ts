@@ -14,11 +14,12 @@ const api = axios.create({
 
 // ------------------ Request Interceptor ------------------
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // Only run in browser (client-side)
   if (typeof window === "undefined") return config;
 
   const token = useAuthStore.getState().token;
-  if (token) {
+
+  // Do not attach Authorization for refresh endpoint
+  if (token && !config.url?.includes("/auth/refresh")) {
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${token}`,
