@@ -5,6 +5,7 @@ import { Card, Typography, Box } from "@mui/material";
 import { AttachMoney, TrendingUp, TrendingDown } from "@mui/icons-material";
 import { useCategory } from "@/features/finance/hooks/categoryAuth";
 import { useCategoryStore } from "@/features/finance/store/categoryStore";
+import ScrollContainer from "@/components/ScrollContainer"; // ✅ reuse custom scroll
 
 export default function CategoryStatsCards() {
   const categoryStore = useCategoryStore();
@@ -12,7 +13,6 @@ export default function CategoryStatsCards() {
 
   const fetchCategoryStats = async () => {
     const response = await getStats();
-    categoryStore.setCategoryStatus(response);
   };
 
   useEffect(() => {
@@ -52,20 +52,25 @@ export default function CategoryStatsCards() {
   ];
 
   return (
-    <Box
+    <ScrollContainer
       sx={{
         display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between", // distribute evenly
-        height: "100%", // take full height of parent (250px column)
-        gap: 1.5, // spacing between cards
+        flexDirection: { xs: "row", md: "column" },
+        justifyContent: "space-between",
+        alignItems: "stretch",
+        gap: 1.5,
+        height: "100%",
+        overflowX: { xs: "auto", md: "visible" }, // ✅ horizontal scroll on small screens
+        overflowY: "hidden",
+        pb: { xs: 1, md: 0 },
       }}
     >
       {cardData.map((item, idx) => (
         <Card
           key={idx}
           sx={{
-            flexGrow: 1, // make cards expand equally
+            flex: { xs: "0 0 150px", md: "none" }, // ✅ equal width for horizontal scroll
+            width: { xs: "150px", md: "100%" },
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -73,9 +78,11 @@ export default function CategoryStatsCards() {
             textAlign: "center",
             p: 1.5,
             borderRadius: 2,
-            bgcolor: "background.default",
+            bgcolor: "background.paper",
             color: "primary.main",
-            minHeight: { xs: 100, md: 0 }, // a bit taller on mobile
+            minHeight: { xs: 100, md: 90 },
+            flexShrink: 0,
+            boxSizing: "border-box",
           }}
         >
           <Box
@@ -102,6 +109,6 @@ export default function CategoryStatsCards() {
           )}
         </Card>
       ))}
-    </Box>
+    </ScrollContainer>
   );
 }

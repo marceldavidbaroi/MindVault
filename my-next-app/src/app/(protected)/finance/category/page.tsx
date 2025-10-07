@@ -19,7 +19,7 @@ const CategoryIndex = () => {
       <Box
         sx={{
           width: { xs: "100%", md: 250 },
-          bgcolor: "background.paper",
+          bgcolor: "transparent",
           borderRadius: 2,
           p: 2,
           flexShrink: 0,
