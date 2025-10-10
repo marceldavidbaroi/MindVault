@@ -1,5 +1,3 @@
-"use client";
-
 import {
   Box,
   Button,
@@ -12,6 +10,7 @@ import {
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import GetStartedBtn from "@/components/GetStartedBtn";
 
 export default function Home() {
   const theme = useTheme();

@@ -1,3 +1,5 @@
+"use client";
+
 const TransactionDashboard = () => {
   return <div>transaction dashboard</div>;
 };
