@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -20,14 +21,26 @@ interface JwtPayload {
   username: string;
 }
 
+// Typed preferences
+interface FrontendPreferences {
+  theme?: 'light' | 'dark';
+  layout?: string;
+  [key: string]: any;
+}
+
+interface BackendPreferences {
+  notifications?: boolean;
+  [key: string]: any;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
     @InjectRepository(UserPreferences)
-    private preferencesRepository: Repository<UserPreferences>,
-    private jwtService: JwtService,
+    private readonly preferencesRepository: Repository<UserPreferences>,
+    private readonly jwtService: JwtService,
   ) {}
 
   // ------------------- SIGNUP -------------------
@@ -39,12 +52,9 @@ export class AuthService {
     const existingUser = await this.userRepository.findOne({
       where: { username },
     });
-    if (existingUser) {
-      throw new ConflictException('Username already exists');
-    }
+    if (existingUser) throw new ConflictException('Username already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = this.userRepository.create({
       username,
       password: hashedPassword,
@@ -71,7 +81,7 @@ export class AuthService {
   async signin(
     authCredentailsDto: SigninDto,
     res: Response,
-  ): Promise<{ user: Partial<User>; accessToken: string }> {
+  ): Promise<{ user: Partial<User> }> {
     const { username, password } = authCredentailsDto;
 
     const user = await this.userRepository.findOne({ where: { username } });
@@ -83,15 +93,22 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: user.id, username };
 
-    // Sign tokens without generic
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
+    // Sign tokens
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    // Hash and save refresh token in DB
+    // Hash and save refresh token
     user.refreshToken = await bcrypt.hash(refreshToken, 10);
     await this.userRepository.save(user);
 
-    // Set httpOnly cookie for refresh token
+    // Set secure HttpOnly cookies
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -101,17 +118,16 @@ export class AuthService {
 
     // Exclude sensitive fields
     const { password: _, refreshToken: __, ...safeUser } = user;
-
-    return { user: safeUser, accessToken };
+    return { user: safeUser };
   }
 
-  // ------------------- REFRESH FROM COOKIE -------------------
-  async refreshFromCookie(
+  // ------------------- REFRESH ACCESS TOKEN -------------------
+  async refreshAccessToken(
     refreshToken: string,
+    res: Response,
   ): Promise<{ accessToken: string }> {
-    if (!refreshToken) {
+    if (!refreshToken)
       throw new UnauthorizedException('No refresh token provided');
-    }
 
     let payload: JwtPayload;
     try {
@@ -123,32 +139,54 @@ export class AuthService {
     const user = await this.userRepository.findOne({
       where: { id: payload.sub },
     });
-    if (!user || !user.refreshToken) {
+    if (!user || !user.refreshToken)
       throw new UnauthorizedException('User not found or token revoked');
-    }
 
-    // Compare hashed token stored in DB
     const isValid = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isValid) {
-      throw new UnauthorizedException('Refresh token mismatch');
-    }
+    if (!isValid) throw new UnauthorizedException('Refresh token mismatch');
 
-    // Later when issuing new access token
+    // Optionally rotate refresh token
     const newAccessToken = this.jwtService.sign(
-      { username: user.username, sub: user.id },
+      { sub: user.id, username: user.username },
       { expiresIn: '1h' },
     );
+    const newRefreshToken = this.jwtService.sign(
+      { sub: user.id, username: user.username },
+      { expiresIn: '7d' },
+    );
+
+    user.refreshToken = await bcrypt.hash(newRefreshToken, 10);
+    await this.userRepository.save(user);
+
+    res.cookie('accessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000,
+    });
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     return { accessToken: newAccessToken };
   }
 
   // ------------------- LOGOUT -------------------
-  async logout(userId: number): Promise<void> {
+  async logout(userId: number, res?: Response): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new UnauthorizedException('User not found');
 
     user.refreshToken = undefined;
     await this.userRepository.save(user);
+
+    if (res) {
+      // Clear cookies
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+    }
   }
 
   // ------------------- GET PROFILE -------------------
@@ -160,7 +198,6 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const { password, refreshToken, ...safeUser } = user;
-
     return {
       ...safeUser,
       preferences: user.preferences || { frontend: {}, backend: {} },
@@ -182,7 +219,10 @@ export class AuthService {
   // ------------------- UPDATE PREFERENCES -------------------
   async updatePreferences(
     userId: number,
-    updateData: { frontend?: any; backend?: any },
+    updateData: {
+      frontend?: FrontendPreferences;
+      backend?: BackendPreferences;
+    },
   ) {
     let prefs = await this.preferencesRepository.findOne({
       where: { user: { id: userId } },
@@ -203,7 +243,6 @@ export class AuthService {
     prefs.backend = { ...prefs.backend, ...updateData.backend };
 
     await this.preferencesRepository.save(prefs);
-
     return prefs;
   }
 }

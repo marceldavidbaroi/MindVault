@@ -38,31 +38,32 @@ export class AuthController {
   async signIn(
     @Body() authCredentailsDto: SigninDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<ApiResponse<{ user: Partial<User>; accessToken: string }>> {
-    const result = await this.authService.signin(authCredentailsDto, res);
+  ): Promise<ApiResponse<Partial<User>>> {
+    const { user } = await this.authService.signin(authCredentailsDto, res);
+
     return {
       success: true,
       message: 'User signed in successfully',
-      data: result,
+      data: user,
     };
   }
 
   @Post('/refresh')
   async refresh(
     @Req() req: Request,
-  ): Promise<ApiResponse<{ accessToken: string }>> {
-    const cookies = req.cookies as Record<string, string>;
-    const refreshToken = cookies['refreshToken'];
-
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ApiResponse<null>> {
+    const refreshToken = req.cookies['refreshToken'];
     if (!refreshToken) {
       throw new UnauthorizedException('No refresh token found');
     }
 
-    const result = await this.authService.refreshFromCookie(refreshToken);
+    await this.authService.refreshAccessToken(refreshToken, res);
+
     return {
       success: true,
       message: 'Access token refreshed successfully',
-      data: result,
+      data: null,
     };
   }
 
@@ -72,8 +73,8 @@ export class AuthController {
     @GetUser() user: User,
     @Res({ passthrough: true }) res: Response,
   ): Promise<ApiResponse<null>> {
-    res.clearCookie('refreshToken');
-    await this.authService.logout(user.id);
+    await this.authService.logout(user.id, res);
+
     return {
       success: true,
       message: 'User logged out successfully',
@@ -110,8 +111,17 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   async updatePreferences(
     @GetUser() user: User,
-    @Body() updateData: { frontend?: any; backend?: any },
-  ): Promise<ApiResponse<{ frontend?: any; backend?: any }>> {
+    @Body()
+    updateData: {
+      frontend?: Record<string, any>;
+      backend?: Record<string, any>;
+    },
+  ): Promise<
+    ApiResponse<{
+      frontend?: Record<string, any>;
+      backend?: Record<string, any>;
+    }>
+  > {
     const updated = await this.authService.updatePreferences(
       user.id,
       updateData,
