@@ -4,7 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Transactions } from 'src/finance/transactions/transactions.entity';
 // ⚡ Imported actual entity classes
 import { MonthlyCategorySummary } from './category_monthly_summary.entity';
@@ -367,5 +367,176 @@ export class SummaryService {
     }
 
     return report;
+  }
+
+  async getTransactionDashboardSummary(userId: number) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const thisMonth = today.getMonth() + 1;
+    const thisYear = today.getFullYear();
+
+    const prevMonth = thisMonth === 1 ? 12 : thisMonth - 1;
+    const prevMonthYear = thisMonth === 1 ? thisYear - 1 : thisYear;
+
+    // --- Daily summaries
+    const dailySummary = await this.dailySummaryRepository.findOne({
+      where: { user: { id: userId }, date: today.toISOString().split('T')[0] },
+    });
+
+    const prevDailySummary = await this.dailySummaryRepository.findOne({
+      where: {
+        user: { id: userId },
+        date: yesterday.toISOString().split('T')[0],
+      },
+    });
+
+    // --- Monthly summaries
+    const monthlySummary = await this.monthlySummaryRepository.findOne({
+      where: { user: { id: userId }, year: thisYear, month: thisMonth },
+    });
+
+    const prevMonthlySummary = await this.monthlySummaryRepository.findOne({
+      where: { user: { id: userId }, year: prevMonthYear, month: prevMonth },
+    });
+
+    // --- Yearly summaries
+    const yearlySummaries = await this.monthlySummaryRepository.find({
+      where: { user: { id: userId }, year: thisYear },
+    });
+
+    const prevYearlySummaries = await this.monthlySummaryRepository.find({
+      where: { user: { id: userId }, year: thisYear - 1 },
+    });
+
+    const totalYearIncome = yearlySummaries.reduce(
+      (sum, m) => sum + parseFloat(m.totalIncome),
+      0,
+    );
+    const totalYearExpense = yearlySummaries.reduce(
+      (sum, m) => sum + parseFloat(m.totalExpense),
+      0,
+    );
+
+    const prevYearIncome = prevYearlySummaries.reduce(
+      (sum, m) => sum + parseFloat(m.totalIncome),
+      0,
+    );
+    const prevYearExpense = prevYearlySummaries.reduce(
+      (sum, m) => sum + parseFloat(m.totalExpense),
+      0,
+    );
+
+    // --- Weekly spending (Mon–Sun) from DailySummary
+    const startOfWeek = new Date(today);
+    const currentDay = startOfWeek.getDay(); // 0 = Sun, 1 = Mon
+    const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+    startOfWeek.setDate(startOfWeek.getDate() + mondayOffset);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const dailySummaries = await this.dailySummaryRepository.find({
+      where: {
+        user: { id: userId },
+        date: Between(
+          startOfWeek.toISOString().split('T')[0],
+          endOfWeek.toISOString().split('T')[0],
+        ),
+      },
+      order: { date: 'ASC' },
+    });
+
+    const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const weekMap = new Map<string, number>();
+
+    dailySummaries.forEach((daySummary) => {
+      const d = new Date(daySummary.date);
+      const day = dayOrder[d.getDay() === 0 ? 6 : d.getDay() - 1]; // JS Sun=0 → Sun=6
+      const amount = Number(daySummary.totalExpense || 0);
+      weekMap.set(day, amount);
+    });
+
+    const weeklyBreakdown = dayOrder.map((day) => ({
+      day,
+      amount: weekMap.get(day) || 0,
+    }));
+
+    const weeklyTotalSpending = weeklyBreakdown.reduce(
+      (sum, d) => sum + d.amount,
+      0,
+    );
+
+    // --- Total remaining income
+    const totalRemainingIncomeAllTimeData =
+      await this.monthlyCategorySummaryRepository
+        .createQueryBuilder('mcs')
+        .select('SUM(mcs.total_amount)', 'totalRemaining')
+        .where('mcs.user_id = :userId', { userId }) // <-- fix here
+        .andWhere('mcs.type = :type', { type: 'income' })
+        .getRawOne();
+
+    const totalRemainingIncomeThisMonthData =
+      await this.monthlyCategorySummaryRepository
+        .createQueryBuilder('mcs')
+        .select('SUM(mcs.total_amount)', 'totalRemaining')
+        .where('mcs.user_id = :userId', { userId }) // <-- fix here
+        .andWhere('mcs.year = :year', { year: thisYear })
+        .andWhere('mcs.month = :month', { month: thisMonth })
+        .andWhere('mcs.type = :type', { type: 'income' })
+        .getRawOne();
+
+    const totalRemainingIncomeAllTime = Number(
+      totalRemainingIncomeAllTimeData?.totalRemaining || 0,
+    );
+    const totalRemainingIncomeThisMonth = Number(
+      totalRemainingIncomeThisMonthData?.totalRemaining || 0,
+    );
+
+    // --- Recent transactions (limit 5)
+    const recentTransactions = await this.transactionsRepository.find({
+      where: { user: { id: userId } },
+      order: { date: 'DESC' },
+      take: 5,
+      relations: ['category'],
+    });
+
+    return {
+      summary: [
+        {
+          title: 'Today',
+          type: 'today',
+          income: Number(dailySummary?.totalIncome || 0),
+          expense: Number(dailySummary?.totalExpense || 0),
+          prevIncome: Number(prevDailySummary?.totalIncome || 0),
+          prevExpense: Number(prevDailySummary?.totalExpense || 0),
+        },
+        {
+          title: 'This Month',
+          type: 'month',
+          income: Number(monthlySummary?.totalIncome || 0),
+          expense: Number(monthlySummary?.totalExpense || 0),
+          prevIncome: Number(prevMonthlySummary?.totalIncome || 0),
+          prevExpense: Number(prevMonthlySummary?.totalExpense || 0),
+        },
+        {
+          title: 'This Year',
+          type: 'year',
+          income: totalYearIncome,
+          expense: totalYearExpense,
+          prevIncome: prevYearIncome,
+          prevExpense: prevYearExpense,
+        },
+      ],
+      weekly: {
+        totalSpending: weeklyTotalSpending,
+        breakdown: weeklyBreakdown,
+      },
+      totalRemainingIncomeAllTime,
+      totalRemainingIncomeThisMonth,
+      recentTransactions,
+    };
   }
 }

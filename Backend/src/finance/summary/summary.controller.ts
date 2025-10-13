@@ -30,4 +30,18 @@ export class SummaryController {
       data: report,
     };
   }
+
+  @Get('transaction-dashboard')
+  async getTransactionDashboardSummary(
+    @GetUser() user: User,
+  ): Promise<ApiResponse<any>> {
+    const data = await this.summaryService.getTransactionDashboardSummary(
+      user.id,
+    );
+    return {
+      success: true,
+      message: 'Dashboard summary fetched successfully',
+      data,
+    };
+  }
 }

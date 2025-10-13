@@ -24,18 +24,23 @@ async function bootstrap() {
   );
 
   // ✅ Enable CORS for frontend with cookies
-  app.enableCors({
-    origin: (origin, callback) => {
-      // allow requests with no origin (like curl or Postman)
-      if (!origin) return callback(null, true);
+  // app.enableCors({
+  //   origin: (origin, callback) => {
+  //     // allow requests with no origin (like curl or Postman)
+  //     if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true); // allow this origin
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true, // needed for cookies
+  //     if (allowedOrigins.includes(origin)) {
+  //       callback(null, true); // allow this origin
+  //     } else {
+  //       callback(new Error('Not allowed by CORS'));
+  //     }
+  //   },
+  //   credentials: true, // needed for cookies
+  // });
+
+  app.enableCors({
+    origin: ['http://localhost:3001'], // frontend
+    credentials: true, // required for cookies
   });
 
   await app.listen(process.env.PORT ?? 3000);

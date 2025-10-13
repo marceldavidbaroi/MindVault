@@ -1,20 +1,35 @@
 import { API_BASE_URL } from "@/config/api";
 
 /**
- * 🔹 Universal Fetch Wrapper (Client + SSR)
+ * 🔹 Universal Fetch Wrapper (Client + SSR / Server Components)
  *
- * - Automatically attaches `credentials: "include"` for cookie-based auth
- * - Forwards cookies from `req` during SSR
- * - Centralizes all API calls in one place
+ * - Automatically attaches `credentials: "include"` for cookie-based auth in client requests.
+ * - For SSR or server components (App Router), forward cookies manually using `next/headers` or `req.headers.cookie`.
+ * - Centralizes all API calls in one place.
  *
- * ✅ Client Usage:
- *    await fetcher("/auth/me");
+ * ✅ Client-side usage:
+ *    import { fetcher } from "@/lib/fetcher";
+ *    const user = await fetcher("/auth/me"); // browser automatically sends cookies
  *
- * ✅ SSR Usage:
- *    export async function getServerSideProps({ req }) {
- *      const user = await fetcher("/auth/me", { method: "GET" }, req);
- *      return { props: { user } };
- *    }
+ * ✅ App Router Server Component (SSR) usage:
+ *    import { cookies } from "next/headers";
+ *    import { fetcher } from "@/lib/fetcher";
+ *
+ *    const cookieStore = cookies();
+ *    const cookieHeader = cookieStore
+ *      .getAll()
+ *      .map(c => `${c.name}=${c.value}`)
+ *      .join("; ");
+ *
+ *    const data = await fetcher("/summary/transaction-dashboard", {
+ *      method: "GET",
+ *      headers: {
+ *        cookie: cookieHeader, // forward cookies to backend
+ *      },
+ *      cache: "no-store",
+ *    });
+ *
+ *
  */
 
 export async function fetcher<T>(
