@@ -7,4 +7,10 @@ export const ENDPOINTS = {
     logout: "/auth/logout",
     me: "/auth/me",
   },
+  summary: {
+    transactionDashboard: "/summary/transaction-dashboard",
+  },
+  transaction: {
+    all: "transactions",
+  },
 };
