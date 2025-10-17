@@ -1,14 +1,12 @@
 "use client";
+
+import React, { useEffect } from "react";
 import FinancialSummaryCard from "@/components/transaction/FinancialSummaryCard";
 import TransactionTableMini from "@/components/transaction/TransactionTableMini";
 import WeeklySpendingCard from "@/components/transaction/WeeklySpendingCard";
-import { fetcher } from "@/lib/fetcher";
-import { useSummaryStore } from "@/store/summaryStore";
-import { cookies } from "next/headers";
-
-import React, { useEffect } from "react";
 import FinancialSummaryCardSkeleton from "./skeleton/FinancialSummaryCardSkeleton";
 import WeeklySpendingCardSkeleton from "./skeleton/WeeklySpendingCardSkeleton";
+import { useSummaryStore } from "@/store/summaryStore";
 
 export const summaryDummyData: FinancialSummaryCardProps["data"][] = [
   {
@@ -19,7 +17,6 @@ export const summaryDummyData: FinancialSummaryCardProps["data"][] = [
     prevIncome: 1000,
     prevExpense: 700,
   },
-
   {
     title: "This Month",
     type: "month",
@@ -38,55 +35,37 @@ export const summaryDummyData: FinancialSummaryCardProps["data"][] = [
   },
 ];
 
-const sampleData = [
-  {
-    id: "1",
-    date: "2025-10-13",
-    category: "Food",
-    description: "Lunch at Cafe Rio",
-    amount: "$12.50",
-  },
-  {
-    id: "2",
-    date: "2025-10-12",
-    category: "Transport",
-    description: "Bus ticket",
-    amount: "$2.00",
-  },
-];
-
 const TransactionIndex = ({ data }) => {
   const { transactionsDashboard, setTransactionDashboard } = useSummaryStore();
 
   useEffect(() => {
-    // ✅ Set new data into Zustand store when component mounts or when `data` changes
     setTransactionDashboard(data);
   }, [data, setTransactionDashboard]);
 
   useEffect(() => {
     console.log("Updated store:", transactionsDashboard);
   }, [transactionsDashboard]);
-  return (
-    <div className="min-h-[70vh] p-4">
-      {/* <pre>{JSON.stringify(transactionsDashboard, null, 2)}</pre> */}
 
+  return (
+    <div className="min-h-[70vh] p-4 bg-background text-foreground transition-colors duration-300">
+      {/* Summary + Table Layout */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* LEFT SIDE */}
         <div className="col-span-1 md:col-span-3 flex flex-col gap-4">
-          {/* Top row: summary cards */}
+          {/* Top row: Summary Cards */}
           <div
             className="
-     flex overflow-x-auto px-2 py-2 gap-4 snap-x snap-mandatory
-    scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-white/10
-    scrollbar-thumb-rounded-full
-    hover:scrollbar-thumb-gray-600
-    transition-colors duration-200
-    [&::-webkit-scrollbar]:h-2
-    [&::-webkit-scrollbar-track]:bg-white/10
-    [&::-webkit-scrollbar-thumb]:bg-gray-700
-    [&::-webkit-scrollbar-thumb]:rounded-full
-    [&::-webkit-scrollbar-thumb:hover]:bg-gray-600
-  "
+              flex overflow-x-auto px-2 py-2 gap-4 snap-x snap-mandatory
+              scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent
+              scrollbar-thumb-rounded-full
+              hover:scrollbar-thumb-muted/80
+              transition-colors duration-200
+              [&::-webkit-scrollbar]:h-2
+              [&::-webkit-scrollbar-track]:bg-muted/20
+              [&::-webkit-scrollbar-thumb]:bg-muted
+              [&::-webkit-scrollbar-thumb]:rounded-full
+              [&::-webkit-scrollbar-thumb:hover]:bg-muted/80
+            "
           >
             {transactionsDashboard.summary.length === 0
               ? Array.from({ length: 3 }).map((_, i) => (
@@ -107,11 +86,11 @@ const TransactionIndex = ({ data }) => {
                 ))}
           </div>
 
-          {/* Bottom: transaction table */}
-          <div className="flex-1 overflow-auto">
+          {/* Bottom: Transaction Table */}
+          <div className="flex-1 overflow-auto bg-card/40 border border-border rounded-xl shadow-sm backdrop-blur-md">
             <TransactionTableMini
               data={transactionsDashboard.recentTransactions}
-              loading={transactionsDashboard.recentTransactions.length === 0} // show skeleton if empty
+              loading={transactionsDashboard.recentTransactions.length === 0}
             />
           </div>
         </div>

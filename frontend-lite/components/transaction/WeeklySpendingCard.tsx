@@ -52,59 +52,72 @@ const WeeklySpendingCard: React.FC<WeeklySpendingProps> = ({
   const { totalSpending, breakdown } = weekly;
 
   return (
-    <Card className="h-full w-full bg-white/10 backdrop-blur-md border border-white/20 shadow-lg rounded-xl flex flex-col">
-      {/* Top: Title + Total Spent */}
-      <CardHeader className="text-left">
-        <CardTitle className="text-xl md:text-xl text-white">
+    <Card className="h-full w-full border border-border bg-card text-card-foreground shadow-md rounded-xl flex flex-col">
+      {/* Top Section */}
+      <CardHeader className="text-left pb-2">
+        <CardTitle className="text-lg md:text-xl text-primary">
           Spend This Week
         </CardTitle>
-        <CardDescription className="text-white/70 text-5xl font-bold mt-2">
+        <CardDescription className="text-muted-foreground text-4xl font-bold mt-2">
           {totalSpending.toLocaleString()} ৳
         </CardDescription>
       </CardHeader>
 
       {/* Area Chart */}
-      <CardContent className="flex-1 min-h-[200px]">
+      <CardContent className="flex-1 min-h-[200px] pt-0">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={breakdown}
             margin={{ top: 20, right: 20, left: 0, bottom: 0 }}
           >
-            <CartesianGrid stroke="rgba(255,255,255,0.1)" vertical={false} />
+            <CartesianGrid stroke="hsl(var(--border) / 0.3)" vertical={false} />
             <XAxis
               dataKey="day"
-              stroke="#fff"
+              stroke="hsl(var(--muted-foreground))"
               tickLine={false}
               axisLine={false}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: "#1f2937", border: "none" }}
-              itemStyle={{ color: "#fff" }}
-              labelStyle={{ color: "#fff" }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--popover))",
+                border: "1px solid hsl(var(--border))",
+                color: "hsl(var(--popover-foreground))",
+              }}
+              labelStyle={{
+                color: "hsl(var(--popover-foreground))",
+              }}
+              itemStyle={{
+                color: "hsl(var(--primary))",
+              }}
             />
             <Area
               type="natural"
               dataKey="amount"
-              stroke="#3b82f6"
-              fill="rgba(59,130,246,0.2)"
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary) / 0.2)"
+              strokeWidth={2}
             />
           </AreaChart>
         </ResponsiveContainer>
       </CardContent>
 
-      {/* Remaining Balances */}
-      <div className="mt-4 w-full flex flex-col gap-3 px-3">
-        <div className="h-12 bg-white/20 rounded-lg flex items-center justify-between px-4">
-          <span className="text-2xl font-bold text-white">
+      {/* Bottom Section */}
+      <div className="mt-4 w-full flex flex-col gap-3 px-3 pb-4">
+        <div className="h-12 bg-accent/20 rounded-lg flex items-center justify-between px-4">
+          <span className="text-xl font-semibold text-foreground">
             {totalRemainingIncomeAllTime.toLocaleString()} ৳
           </span>
-          <span className="text-white/70">All Time Remaining</span>
+          <span className="text-muted-foreground text-sm">
+            All Time Remaining
+          </span>
         </div>
-        <div className="h-12 bg-white/20 rounded-lg flex items-center justify-between px-4">
-          <span className="text-2xl font-bold text-white">
+        <div className="h-12 bg-secondary/20 rounded-lg flex items-center justify-between px-4">
+          <span className="text-xl font-semibold text-foreground">
             {totalRemainingIncomeThisMonth.toLocaleString()} ৳
           </span>
-          <span className="text-white/70">This Month Remaining</span>
+          <span className="text-muted-foreground text-sm">
+            This Month Remaining
+          </span>
         </div>
       </div>
     </Card>

@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Info, Layers, Plus } from "lucide-react";
 import { ButtonGroup } from "../ui/button-group";
-import { Skeleton } from "@/components/ui/skeleton"; // import shadcn Skeleton
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Transaction {
   id: number;
@@ -31,7 +31,7 @@ interface Transaction {
 
 interface TransactionTableProps {
   data: Transaction[];
-  loading?: boolean; // new prop
+  loading?: boolean;
 }
 
 const TransactionTableMini: React.FC<TransactionTableProps> = ({
@@ -43,34 +43,56 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
   };
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-white/20 bg-white/10 dark:bg-white/5 backdrop-blur-md shadow-lg transition-all duration-300 hover:border-white/30">
+    <div
+      className="
+        w-full overflow-x-auto rounded-2xl 
+        border border-border 
+        bg-card/60 backdrop-blur-md 
+        shadow-md 
+        transition-all duration-300 
+        hover:border-ring/40
+      "
+    >
       <div className="flex justify-between items-center p-3">
-        <div className="text-left text-2xl font-bold ">Recent Transactions</div>
+        <div className="text-left text-2xl font-bold text-foreground">
+          Recent Transactions
+        </div>
         <ButtonGroup>
-          <Button variant="default">
+          <Button
+            variant="default"
+            className="bg-primary text-primary-foreground"
+          >
             <Plus className="w-5 h-5" />
           </Button>
-          <Button variant="default">
+          <Button
+            variant="default"
+            className="bg-secondary text-secondary-foreground"
+          >
             <Layers className="w-5 h-5" />
           </Button>
-          <Button variant="default">
+          <Button
+            variant="default"
+            className="bg-accent text-accent-foreground"
+          >
             <Info className="w-5 h-5" />
           </Button>
         </ButtonGroup>
       </div>
 
       <Table>
-        <TableCaption className="text-white/70 dark:text-white/50"></TableCaption>
+        <TableCaption className="text-muted-foreground"></TableCaption>
         <TableHeader>
-          <TableRow className="border-white/20">
-            <TableHead className="w-[120px] text-white/90">Date</TableHead>
-            <TableHead className="hidden sm:table-cell text-white/90">
+          <TableRow className="border-border/60">
+            <TableHead className="w-[120px] text-foreground/90">Date</TableHead>
+            <TableHead className="hidden sm:table-cell text-foreground/90">
               Category
             </TableHead>
-            <TableHead className="hidden sm:table-cell text-white/90">
+            <TableHead className="hidden sm:table-cell text-foreground/90">
               Description
             </TableHead>
-            <TableHead className="text-right text-white/90">Amount</TableHead>
+            <TableHead className="text-right text-foreground/90">
+              Amount
+            </TableHead>
           </TableRow>
         </TableHeader>
 
@@ -79,16 +101,16 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
             ? Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="animate-pulse">
                   <TableCell>
-                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-20 bg-muted" />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-24 bg-muted" />
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <Skeleton className="h-4 w-full max-w-[200px]" />
+                    <Skeleton className="h-4 w-full max-w-[200px] bg-muted" />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Skeleton className="h-4 w-16 ml-auto" />
+                    <Skeleton className="h-4 w-16 ml-auto bg-muted" />
                   </TableCell>
                 </TableRow>
               ))
@@ -96,18 +118,21 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
                 <TableRow
                   key={tx.id}
                   onClick={() => handleRowClick(tx)}
-                  className="cursor-pointer transition-colors hover:bg-white/20 dark:hover:bg-white/10"
+                  className="
+                    cursor-pointer transition-colors 
+                    hover:bg-muted/40
+                  "
                 >
-                  <TableCell className="font-medium text-white">
+                  <TableCell className="font-medium text-foreground">
                     {tx.date}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-white/90">
+                  <TableCell className="hidden sm:table-cell text-foreground/90">
                     {tx.category.displayName}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell truncate max-w-[200px] text-white/80">
+                  <TableCell className="hidden sm:table-cell truncate max-w-[200px] text-muted-foreground">
                     {tx.description || "-"}
                   </TableCell>
-                  <TableCell className="text-right text-white font-semibold">
+                  <TableCell className="text-right text-primary font-semibold">
                     {tx.amount}
                   </TableCell>
                 </TableRow>

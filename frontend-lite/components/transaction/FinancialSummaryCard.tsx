@@ -36,33 +36,44 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({
     : 0;
 
   const typeIcon = {
-    year: <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-white/70" />,
-    month: <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-white/70" />,
-    today: <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white/70" />,
+    year: (
+      <CalendarDays className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
+    ),
+    month: <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />,
+    today: <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />,
   };
 
   return (
     <Card
-      className="w-full min-w-[260px] sm:min-w-[280px] md:w-64 lg:w-72 xl:w-80
-    min-h-[120px] sm:min-h-[130px] md:min-h-[120px] lg:min-h-[120px] xl:min-h-[130px]
-    bg-white/10 backdrop-blur-md border border-white/20 shadow-lg rounded-xl"
+      className="
+        w-full min-w-[260px] sm:min-w-[280px] md:w-64 lg:w-72 xl:w-80
+        min-h-[120px] sm:min-h-[130px] md:min-h-[120px] lg:min-h-[120px] xl:min-h-[130px]
+        bg-card/60 backdrop-blur-md border border-border shadow-md rounded-xl
+      "
     >
       <CardHeader className="flex justify-between items-center px-3 py-0 sm:px-4 sm:py-0 m-0">
-        <CardTitle className="text-sm sm:text-sm md:text-base lg:text-lg font-bold">
+        <CardTitle className="text-sm sm:text-sm md:text-base lg:text-lg font-bold text-foreground">
           {title}
         </CardTitle>
         {typeIcon[type]}
       </CardHeader>
 
       <CardContent className="flex flex-col gap-1 px-3 py-1 sm:px-4 sm:py-1">
-        {/* Income Bar */}
+        {/* Income Section */}
         <div className="flex flex-col gap-0.5">
-          <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-white">
+          <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-foreground/90">
             Income
           </p>
-          <div className="relative w-full h-4 sm:h-5 bg-white/20 rounded-md">
+          <div className="relative w-full h-4 sm:h-5 bg-muted rounded-md">
             <div
-              className="h-4 sm:h-5 bg-green-500 rounded-md flex items-center justify-end pr-1 sm:pr-2 text-white font-bold text-[9px] sm:text-[10px] md:text-xs"
+              className="
+                h-4 sm:h-5 
+                bg-success 
+                rounded-md 
+                flex items-center justify-end 
+                pr-1 sm:pr-2 
+                text-primary font-bold text-[9px] sm:text-[10px] md:text-xs
+              "
               style={{
                 width: `${Math.min(
                   (income / Math.max(prevIncome, 1)) * 100,
@@ -74,8 +85,8 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({
             </div>
           </div>
           <p
-            className={`text-[8px] sm:text-[9px] md:text-[10px] text-white/70 flex items-center gap-1 ${
-              incomeDiff >= 0 ? "text-green-400" : "text-red-400"
+            className={`text-[8px] sm:text-[9px] md:text-[10px] flex items-center gap-1 ${
+              incomeDiff >= 0 ? "text-success" : "text-destructive"
             }`}
           >
             {incomeDiff >= 0 ? (
@@ -87,14 +98,21 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({
           </p>
         </div>
 
-        {/* Expense Bar */}
+        {/* Expense Section */}
         <div className="flex flex-col gap-0.5">
-          <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-white">
+          <p className="text-[9px] sm:text-[10px] md:text-xs font-semibold text-foreground/90">
             Expense
           </p>
-          <div className="relative w-full h-4 sm:h-5 bg-white/20 rounded-md">
+          <div className="relative w-full h-4 sm:h-5 bg-muted rounded-md">
             <div
-              className="h-4 sm:h-5 bg-red-500 rounded-md flex items-center justify-end pr-1 sm:pr-2 text-white font-bold text-[9px] sm:text-[10px] md:text-xs"
+              className="
+                h-4 sm:h-5 
+                bg-destructive 
+                rounded-md 
+                flex items-center justify-end 
+                pr-1 sm:pr-2 
+                text-primary-foreground font-bold text-[9px] sm:text-[10px] md:text-xs
+              "
               style={{
                 width: `${Math.min(
                   (expense / Math.max(prevExpense, 1)) * 100,
@@ -106,8 +124,8 @@ const FinancialSummaryCard: React.FC<FinancialSummaryCardProps> = ({
             </div>
           </div>
           <p
-            className={`text-[8px] sm:text-[9px] md:text-[10px] text-white/70 flex items-center gap-1 ${
-              expenseDiff >= 0 ? "text-red-400" : "text-green-400"
+            className={`text-[8px] sm:text-[9px] md:text-[10px] flex items-center gap-1 ${
+              expenseDiff >= 0 ? "text-destructive" : "text-success"
             }`}
           >
             {expenseDiff >= 0 ? (
