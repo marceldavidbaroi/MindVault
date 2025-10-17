@@ -1,39 +1,13 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import FinancialSummaryCard from "@/components/transaction/FinancialSummaryCard";
 import TransactionTableMini from "@/components/transaction/TransactionTableMini";
 import WeeklySpendingCard from "@/components/transaction/WeeklySpendingCard";
 import FinancialSummaryCardSkeleton from "./skeleton/FinancialSummaryCardSkeleton";
 import WeeklySpendingCardSkeleton from "./skeleton/WeeklySpendingCardSkeleton";
 import { useSummaryStore } from "@/store/summaryStore";
-
-export const summaryDummyData: FinancialSummaryCardProps["data"][] = [
-  {
-    title: "Today",
-    type: "today",
-    income: 1200,
-    expense: 800,
-    prevIncome: 1000,
-    prevExpense: 700,
-  },
-  {
-    title: "This Month",
-    type: "month",
-    income: 15000,
-    expense: 12000,
-    prevIncome: 13000,
-    prevExpense: 11000,
-  },
-  {
-    title: "This Year",
-    type: "year",
-    income: 120000,
-    expense: 95000,
-    prevIncome: 100000,
-    prevExpense: 90000,
-  },
-];
+import TransactionList from "./TransactionList";
 
 const TransactionIndex = ({ data }) => {
   const { transactionsDashboard, setTransactionDashboard } = useSummaryStore();
@@ -111,6 +85,9 @@ const TransactionIndex = ({ data }) => {
             <WeeklySpendingCardSkeleton />
           )}
         </div>
+      </div>
+      <div className="mt-6">
+        <TransactionList />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Info, Layers, Plus } from "lucide-react";
 import { ButtonGroup } from "../ui/button-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import TransactionModal from "./TransactionModal";
 
 interface Transaction {
   id: number;
@@ -41,6 +42,7 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
   const handleRowClick = (tx: Transaction) => {
     console.log("Clicked transaction:", tx);
   };
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
     <div
@@ -61,6 +63,7 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
           <Button
             variant="default"
             className="bg-primary text-primary-foreground"
+            onClick={() => setIsCreateModalOpen(true)}
           >
             <Plus className="w-5 h-5" />
           </Button>
@@ -139,6 +142,11 @@ const TransactionTableMini: React.FC<TransactionTableProps> = ({
               ))}
         </TableBody>
       </Table>
+
+      <TransactionModal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+      />
     </div>
   );
 };
